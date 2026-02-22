@@ -40,6 +40,8 @@ import { registerRuntimeAPIs } from '@/contexts/runtimeAPIRegistry';
 import { VoiceProvider } from '@/components/voice';
 import { useUIStore } from '@/stores/useUIStore';
 import { useGitHubAuthStore } from '@/stores/useGitHubAuthStore';
+import { DesktopTitleBar } from '@/components/desktop/DesktopTitleBar';
+import { isCustomTitleBar } from '@/lib/desktop';
 import type { RuntimeAPIs } from '@/lib/api/types';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
@@ -495,11 +497,16 @@ function App({ apis }: AppProps) {
     window.location.reload();
   }, []);
 
+  const showCustomTitleBar = React.useMemo(() => isCustomTitleBar(), []);
+
   if (showCliOnboarding) {
     return (
       <ErrorBoundary>
-        <div className="h-full text-foreground bg-transparent">
-          <OnboardingScreen onCliAvailable={handleCliAvailable} />
+        <div className="h-full text-foreground bg-transparent flex flex-col overflow-hidden">
+          {showCustomTitleBar && <DesktopTitleBar />}
+          <div className="flex-1 min-h-0">
+            <OnboardingScreen onCliAvailable={handleCliAvailable} />
+          </div>
         </div>
       </ErrorBoundary>
     );
@@ -532,21 +539,24 @@ function App({ apis }: AppProps) {
       : 'chat';
 
     if (panelType === 'agentManager') {
-    return (
-      <ErrorBoundary>
-        <SyncProvider sdk={opencodeClient.getSdkClient()} directory={currentDirectory || ''}>
-          <RuntimeAPIProvider apis={apis}>
-            <TooltipProvider delayDuration={700} skipDelayDuration={150}>
-              <div className="h-full text-foreground bg-background">
-                <SyncAppEffects apis={apis} embeddedBackgroundWorkEnabled={embeddedBackgroundWorkEnabled} />
-                <AgentManagerView />
-                <Toaster />
-              </div>
-            </TooltipProvider>
-          </RuntimeAPIProvider>
-        </SyncProvider>
-      </ErrorBoundary>
-    );
+      return (
+        <ErrorBoundary>
+          <SyncProvider sdk={opencodeClient.getSdkClient()} directory={currentDirectory || ''}>
+            <RuntimeAPIProvider apis={apis}>
+              <TooltipProvider delayDuration={700} skipDelayDuration={150}>
+                <div className="h-full text-foreground bg-background flex flex-col overflow-hidden">
+                  {showCustomTitleBar && <DesktopTitleBar />}
+                  <div className="flex-1 min-h-0">
+                    <SyncAppEffects apis={apis} embeddedBackgroundWorkEnabled={embeddedBackgroundWorkEnabled} />
+                    <AgentManagerView />
+                  </div>
+                  <Toaster />
+                </div>
+              </TooltipProvider>
+            </RuntimeAPIProvider>
+          </SyncProvider>
+        </ErrorBoundary>
+      );
     }
 
     return (
@@ -555,9 +565,12 @@ function App({ apis }: AppProps) {
           <RuntimeAPIProvider apis={apis}>
             <FireworksProvider>
               <TooltipProvider delayDuration={700} skipDelayDuration={150}>
-                <div className="h-full text-foreground bg-background">
-                  <SyncAppEffects apis={apis} embeddedBackgroundWorkEnabled={embeddedBackgroundWorkEnabled} />
-                  <VSCodeLayout />
+                <div className="h-full text-foreground bg-background flex flex-col overflow-hidden">
+                  {showCustomTitleBar && <DesktopTitleBar />}
+                  <div className="flex-1 min-h-0">
+                    <SyncAppEffects apis={apis} embeddedBackgroundWorkEnabled={embeddedBackgroundWorkEnabled} />
+                    <VSCodeLayout />
+                  </div>
                   <Toaster />
                 </div>
               </TooltipProvider>
@@ -576,9 +589,12 @@ function App({ apis }: AppProps) {
             <FireworksProvider>
               <VoiceProvider>
                 <TooltipProvider delayDuration={700} skipDelayDuration={150}>
-                  <div className={isDesktopRuntime ? 'h-full text-foreground bg-transparent' : 'h-full text-foreground bg-background'}>
-                    <SyncAppEffects apis={apis} embeddedBackgroundWorkEnabled={embeddedBackgroundWorkEnabled} />
-                    <MainLayout />
+                  <div className={isDesktopRuntime ? 'h-full text-foreground bg-transparent' : 'h-full text-foreground bg-background flex flex-col overflow-hidden'}>
+                    {showCustomTitleBar && <DesktopTitleBar />}
+                    <div className="flex-1 min-h-0">
+                      <SyncAppEffects apis={apis} embeddedBackgroundWorkEnabled={embeddedBackgroundWorkEnabled} />
+                      <MainLayout />
+                    </div>
                     <Toaster />
                     <ConfigUpdateOverlay />
                     <AboutDialogWrapper />
