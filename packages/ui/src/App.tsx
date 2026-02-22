@@ -37,6 +37,8 @@ import { registerRuntimeAPIs } from '@/contexts/runtimeAPIRegistry';
 import { VoiceProvider } from '@/components/voice';
 import { useUIStore } from '@/stores/useUIStore';
 import { useGitHubAuthStore } from '@/stores/useGitHubAuthStore';
+import { DesktopTitleBar } from '@/components/desktop/DesktopTitleBar';
+import { isCustomTitleBar } from '@/lib/desktop';
 import type { RuntimeAPIs } from '@/lib/api/types';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
@@ -464,11 +466,16 @@ function App({ apis }: AppProps) {
     window.location.reload();
   }, []);
 
+  const showCustomTitleBar = React.useMemo(() => isCustomTitleBar(), []);
+
   if (showCliOnboarding) {
     return (
       <ErrorBoundary>
-        <div className="h-full text-foreground bg-transparent">
-          <OnboardingScreen onCliAvailable={handleCliAvailable} />
+        <div className="h-full text-foreground bg-transparent flex flex-col overflow-hidden">
+          {showCustomTitleBar && <DesktopTitleBar />}
+          <div className="flex-1 min-h-0">
+            <OnboardingScreen onCliAvailable={handleCliAvailable} />
+          </div>
         </div>
       </ErrorBoundary>
     );
@@ -497,18 +504,21 @@ function App({ apis }: AppProps) {
       : 'chat';
     
     if (panelType === 'agentManager') {
-    return (
-      <ErrorBoundary>
-        <RuntimeAPIProvider apis={apis}>
-          <TooltipProvider delayDuration={700} skipDelayDuration={150}>
-            <div className="h-full text-foreground bg-background">
-              <AgentManagerView />
-              <Toaster />
-            </div>
-          </TooltipProvider>
-        </RuntimeAPIProvider>
-      </ErrorBoundary>
-    );
+      return (
+        <ErrorBoundary>
+          <RuntimeAPIProvider apis={apis}>
+            <TooltipProvider delayDuration={700} skipDelayDuration={150}>
+              <div className="h-full text-foreground bg-background flex flex-col overflow-hidden">
+                {showCustomTitleBar && <DesktopTitleBar />}
+                <div className="flex-1 min-h-0">
+                  <AgentManagerView />
+                </div>
+                <Toaster />
+              </div>
+            </TooltipProvider>
+          </RuntimeAPIProvider>
+        </ErrorBoundary>
+      );
     }
     
     return (
@@ -516,8 +526,11 @@ function App({ apis }: AppProps) {
         <RuntimeAPIProvider apis={apis}>
           <FireworksProvider>
             <TooltipProvider delayDuration={700} skipDelayDuration={150}>
-              <div className="h-full text-foreground bg-background">
-                <VSCodeLayout />
+              <div className="h-full text-foreground bg-background flex flex-col overflow-hidden">
+                {showCustomTitleBar && <DesktopTitleBar />}
+                <div className="flex-1 min-h-0">
+                  <VSCodeLayout />
+                </div>
                 <Toaster />
               </div>
             </TooltipProvider>
@@ -534,8 +547,11 @@ function App({ apis }: AppProps) {
           <FireworksProvider>
             <VoiceProvider>
               <TooltipProvider delayDuration={700} skipDelayDuration={150}>
-                <div className="h-full text-foreground bg-background">
-                  <MainLayout />
+                <div className="h-full text-foreground bg-background flex flex-col overflow-hidden">
+                  {showCustomTitleBar && <DesktopTitleBar />}
+                  <div className="flex-1 min-h-0">
+                    <MainLayout />
+                  </div>
                   <Toaster />
                   <ConfigUpdateOverlay />
                   <AboutDialogWrapper />

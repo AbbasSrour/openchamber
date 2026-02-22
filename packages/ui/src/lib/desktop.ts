@@ -601,3 +601,80 @@ export const clearDesktopCache = async (): Promise<boolean> => {
     return false;
   }
 };
+
+export const isCustomTitleBar = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  return (window as unknown as { __OPENCHAMBER_CUSTOM_TITLE_BAR__?: boolean }).__OPENCHAMBER_CUSTOM_TITLE_BAR__ === true;
+};
+
+export const desktopWindowMinimize = async (): Promise<boolean> => {
+  if (!isTauriShell()) return false;
+  try {
+    const tauri = (window as unknown as { __TAURI__?: TauriGlobal }).__TAURI__;
+    await tauri?.core?.invoke?.('desktop_window_minimize');
+    return true;
+  } catch (error) {
+    console.warn('Failed to minimize window', error);
+    return false;
+  }
+};
+
+export const desktopWindowMaximize = async (): Promise<boolean> => {
+  if (!isTauriShell()) return false;
+  try {
+    const tauri = (window as unknown as { __TAURI__?: TauriGlobal }).__TAURI__;
+    await tauri?.core?.invoke?.('desktop_window_maximize');
+    return true;
+  } catch (error) {
+    console.warn('Failed to maximize window', error);
+    return false;
+  }
+};
+
+export const desktopWindowUnmaximize = async (): Promise<boolean> => {
+  if (!isTauriShell()) return false;
+  try {
+    const tauri = (window as unknown as { __TAURI__?: TauriGlobal }).__TAURI__;
+    await tauri?.core?.invoke?.('desktop_window_unmaximize');
+    return true;
+  } catch (error) {
+    console.warn('Failed to unmaximize window', error);
+    return false;
+  }
+};
+
+export const desktopWindowToggleMaximize = async (): Promise<boolean> => {
+  if (!isTauriShell()) return false;
+  try {
+    const tauri = (window as unknown as { __TAURI__?: TauriGlobal }).__TAURI__;
+    await tauri?.core?.invoke?.('desktop_window_toggle_maximize');
+    return true;
+  } catch (error) {
+    console.warn('Failed to toggle maximize window', error);
+    return false;
+  }
+};
+
+export const desktopWindowClose = async (): Promise<boolean> => {
+  if (!isTauriShell()) return false;
+  try {
+    const tauri = (window as unknown as { __TAURI__?: TauriGlobal }).__TAURI__;
+    await tauri?.core?.invoke?.('desktop_window_close');
+    return true;
+  } catch (error) {
+    console.warn('Failed to close window', error);
+    return false;
+  }
+};
+
+export const desktopWindowIsMaximized = async (): Promise<boolean> => {
+  if (!isTauriShell()) return false;
+  try {
+    const tauri = (window as unknown as { __TAURI__?: TauriGlobal }).__TAURI__;
+    const result = await tauri?.core?.invoke?.('desktop_window_is_maximized');
+    return result === true;
+  } catch (error) {
+    console.warn('Failed to check if window is maximized', error);
+    return false;
+  }
+};

@@ -2226,6 +2226,40 @@ fn desktop_new_window_at_url(app: tauri::AppHandle, url: String) -> Result<(), S
 /// Read a file and return its content as base64 with mime type detection.
 /// Used for drag-drop file attachments in desktop app.
 #[tauri::command]
+fn desktop_window_minimize(window: tauri::Window) -> Result<(), String> {
+    window.minimize().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn desktop_window_maximize(window: tauri::Window) -> Result<(), String> {
+    window.maximize().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn desktop_window_unmaximize(window: tauri::Window) -> Result<(), String> {
+    window.unmaximize().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn desktop_window_toggle_maximize(window: tauri::Window) -> Result<(), String> {
+    if window.is_maximized().unwrap_or(false) {
+        window.unmaximize().map_err(|e| e.to_string())
+    } else {
+        window.maximize().map_err(|e| e.to_string())
+    }
+}
+
+#[tauri::command]
+fn desktop_window_close(window: tauri::Window) -> Result<(), String> {
+    window.close().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn desktop_window_is_maximized(window: tauri::Window) -> Result<bool, String> {
+    window.is_maximized().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 fn desktop_read_file(path: String) -> Result<FileContent, String> {
     use std::path::Path;
 
@@ -2339,12 +2373,13 @@ fn build_init_script(local_origin: &str) -> String {
     let home =
         std::env::var(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).unwrap_or_default();
     let macos_major = macos_major_version().unwrap_or(0);
+    let custom_title_bar = cfg!(target_os = "linux");
 
     let home_json = serde_json::to_string(&home).unwrap_or_else(|_| "\"\"".into());
     let local_json = serde_json::to_string(local_origin).unwrap_or_else(|_| "\"\"".into());
 
     let mut init_script = format!(
-        "(function(){{try{{window.__OPENCHAMBER_HOME__={home_json};window.__OPENCHAMBER_MACOS_MAJOR__={macos_major};window.__OPENCHAMBER_LOCAL_ORIGIN__={local_json};}}catch(_e){{}}}})();"
+        "(function(){{try{{window.__OPENCHAMBER_HOME__={home_json};window.__OPENCHAMBER_MACOS_MAJOR__={macos_major};window.__OPENCHAMBER_LOCAL_ORIGIN__={local_json};window.__OPENCHAMBER_CUSTOM_TITLE_BAR__={custom_title_bar};}}catch(_e){{}}}})();"
     );
 
     // Cleanup: older builds injected a native-ish Instance switcher button into pages.
@@ -2502,10 +2537,19 @@ fn create_window(
         .title("OpenChamber")
         .inner_size(1280.0, 800.0)
         .min_inner_size(MIN_WINDOW_WIDTH as f64, MIN_WINDOW_HEIGHT as f64)
-        .decorations(true)
         .visible(false)
         .initialization_script(&init_script)
         .background_throttling(BackgroundThrottlingPolicy::Disabled);
+
+    #[cfg(target_os = "linux")]
+    {
+        builder = builder.decorations(false);
+    }
+
+    #[cfg(not(target_os = "linux"))]
+    {
+        builder = builder.decorations(true);
+    }
 
     let apply_restored_state = restored_state
         .as_ref()
@@ -2562,10 +2606,19 @@ fn create_startup_window(app: &tauri::AppHandle, restore_geometry: bool) -> Resu
         .title("OpenChamber")
         .inner_size(1280.0, 800.0)
         .min_inner_size(MIN_WINDOW_WIDTH as f64, MIN_WINDOW_HEIGHT as f64)
-        .decorations(true)
         .visible(true)
         .initialization_script(&splash_script)
         .background_throttling(BackgroundThrottlingPolicy::Disabled);
+
+    #[cfg(target_os = "linux")]
+    {
+        builder = builder.decorations(false);
+    }
+
+    #[cfg(not(target_os = "linux"))]
+    {
+        builder = builder.decorations(true);
+    }
 
     let apply_restored_state = restored_state
         .as_ref()
@@ -2682,9 +2735,11 @@ fn build_startup_splash_script() -> String {
     let fg_light_json = serde_json::to_string(splash_fg_light).unwrap_or_else(|_| "\"\"".into());
     let bg_dark_json = serde_json::to_string(splash_bg_dark).unwrap_or_else(|_| "\"\"".into());
     let fg_dark_json = serde_json::to_string(splash_fg_dark).unwrap_or_else(|_| "\"\"".into());
+    let custom_title_bar = cfg!(target_os = "linux");
+    let custom_title_bar_json = serde_json::to_string(&custom_title_bar).unwrap_or_else(|_| "false".into());
 
     format!(
-        "(function(){{try{{var mode={mode_json};var bgLight={bg_light_json};var fgLight={fg_light_json};var bgDark={bg_dark_json};var fgDark={fg_dark_json};var root=document.documentElement;if(bgLight)root.style.setProperty('--splash-background-light',bgLight);if(fgLight)root.style.setProperty('--splash-stroke-light',fgLight);if(bgDark)root.style.setProperty('--splash-background-dark',bgDark);if(fgDark)root.style.setProperty('--splash-stroke-dark',fgDark);var prefersDark=false;try{{prefersDark=!!(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);}}catch(_e){{}}var dark=mode==='dark'?true:(mode==='light'?false:prefersDark);root.setAttribute('data-splash-variant',dark?'dark':'light');root.style.setProperty('color-scheme',dark?'dark':'light');}}catch(_e){{}}}})();"
+        "(function(){{try{{window.__OPENCHAMBER_CUSTOM_TITLE_BAR__={custom_title_bar_json};var mode={mode_json};var bgLight={bg_light_json};var fgLight={fg_light_json};var bgDark={bg_dark_json};var fgDark={fg_dark_json};var root=document.documentElement;if(bgLight)root.style.setProperty('--splash-background-light',bgLight);if(fgLight)root.style.setProperty('--splash-stroke-light',fgLight);if(bgDark)root.style.setProperty('--splash-background-dark',bgDark);if(fgDark)root.style.setProperty('--splash-stroke-dark',fgDark);var prefersDark=false;try{{prefersDark=!!(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);}}catch(_e){{}}var dark=mode==='dark'?true:(mode==='light'?false:prefersDark);root.setAttribute('data-splash-variant',dark?'dark':'light');root.style.setProperty('color-scheme',dark?'dark':'light');}}catch(_e){{}}}})();"
     )
 }
 
@@ -2834,7 +2889,7 @@ fn main() {
 
             #[cfg(not(target_os = "macos"))]
             {
-                tauri::menu::Menu::default(app)
+                tauri::menu::Menu::new(app)
             }
         })
         .on_menu_event(|app, event| {
@@ -3034,6 +3089,12 @@ fn main() {
             remote_ssh::desktop_ssh_logs,
             remote_ssh::desktop_ssh_logs_clear,
             desktop_read_file,
+            desktop_window_minimize,
+            desktop_window_maximize,
+            desktop_window_unmaximize,
+            desktop_window_toggle_maximize,
+            desktop_window_close,
+            desktop_window_is_maximized,
         ])
         .setup(|app| {
             let handle = app.handle().clone();

@@ -566,7 +566,7 @@ export const MainLayout: React.FC = () => {
         <DiffWorkerProvider>
             <div
                 className={cn(
-                    'main-content-safe-area h-[100dvh]',
+                    'main-content-safe-area h-full',
                     isMobile ? 'flex flex-col' : 'flex',
                     'bg-background'
                 )}
